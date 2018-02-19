@@ -2,7 +2,7 @@ import urllib.request
 from bs4 import BeautifulSoup
 import datetime
 import json
-import craigs_scrap_web
+import craigs_scrap_web 
 
 search = input('What are you looking for? ')
 city = input('what city are you looking in? ')
