@@ -3,6 +3,7 @@ import urllib.request
 from bs4 import BeautifulSoup
 import datetime
 import json
+import re
 #now put it all together in dict data format.
 
 #get the post ID for item
@@ -40,7 +41,8 @@ def get_post_date(url):
     soup = BeautifulSoup(html_doc, 'html.parser')
     post_time = soup.find("time").get('datetime')
     time = post_time.replace("T"," ")
-    time = time.replace("-0600", "")
+    # Remove the timeone part in the format "-0600"
+    time = re.sub('\-\d{4}', '', time)
     return time
 
 #get the update date and item
@@ -51,7 +53,8 @@ def get_update_date(url):
     if len(update_time) > 2:
         update_time = update_time[2].get('datetime')
         time = update_time.replace("T"," ")
-        time = time.replace("-0600", "")
+        # Remove the timeone part in the format "-0600"
+        time = re.sub('\-\d{4}', '', time)
         return time
     else:
         return get_post_date(url)
@@ -68,5 +71,9 @@ def get_name(url):
 def get_img(url):
     html_doc = urllib.request.urlopen(url)
     soup = BeautifulSoup(html_doc, 'html.parser')
-    data = str(soup.find("img").get("src"))
-    return data
+    img_tag = soup.find("img")
+    # Not all posts have an image
+    if img_tag is None:
+        return ""
+    
+    return str(img_tag.get("src"))

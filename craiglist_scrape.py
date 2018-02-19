@@ -12,7 +12,7 @@ hour = int(input('how many hours old? '))
 f = open("testfile.txt","w")
 
 #format for datetime
-format = '%Y-%m-%d %H:%M:%S'
+dateFormat = '%Y-%m-%d %H:%M:%S'
 
 #get current time
 current_time =datetime.datetime.now()
@@ -27,8 +27,8 @@ json_object = {}
 city = city.replace(" ","")
 search = search.replace(" ", "+")
 
-#open url
-html_doc = urllib.request.urlopen("https://"+city+".craigslist.org/search/sss?query="+search+"&sort=rel")
+# Open search results, sorted by "newest"
+html_doc = urllib.request.urlopen("https://"+city+".craigslist.org/search/sss?query="+search+"&sort=date")
 
 #function below sanatise the '#' out of the above list and also removed duplicates.
 def listsanitation(homeInfo):
@@ -36,21 +36,20 @@ def listsanitation(homeInfo):
     while len(homeInfo) > i:
         if homeInfo[i] == homeInfo[i-1]:
             del homeInfo[i]
-            i = i+1
-        else:
-            i=i+1
+        i=i+1
     return homeInfo
 
 #function find all links in the user request
 def gather_all_links():
-    hreflist = []
+    # TODO - This only gets the first page of results, expand to get more pages
+    hrefSet = set() # Use a set to remove duplicates
     soup = BeautifulSoup(html_doc, 'html.parser')
     for link in soup.find_all("li", class_="result-row"):
         for href in link.find_all('a'):
-           prodLink = href.get('href')
-           if prodLink != '#':
-               hreflist.append(prodLink)
-    return listsanitation(hreflist)
+            prodLink = href.get('href')
+            if prodLink != '#':
+                hrefSet.add(prodLink)
+    return list(hrefSet)
 
 #checks to see if links are with in users timefram request
 #if so, return link
@@ -59,7 +58,8 @@ def gather_all_links():
 def product_info(links):
     prod_info = {}
     i = 0
-    while 10 > i:
+    while len(links) > i:
+        print("opening link: [{}]".format(links[i]))
         post_id = craigs_scrap_web.get_post_id(links[i])
         description = craigs_scrap_web.get_description(links[i])
         price = craigs_scrap_web.get_price(links[i])
@@ -68,9 +68,8 @@ def product_info(links):
         image_link = craigs_scrap_web.get_img(links[i])
         update = craigs_scrap_web.get_update_date(links[i])
 
-        if(datetime.datetime.strptime(update, format) > check_time):
-            print("recent item found")
-            prod_info[post_id] = {
+        if(datetime.datetime.strptime(update, dateFormat) > check_time):
+            item = {
                 "name": name,
                 "price": price,
                 "description": description.replace('\n\n\n\n\n',""),
@@ -79,6 +78,8 @@ def product_info(links):
                 "image_link": image_link,
                 "link": links[i]
             }
+            print("recent item found: {}".format(item))
+            prod_info[post_id] = item
             i = i+1
         else:
             i = i+1
